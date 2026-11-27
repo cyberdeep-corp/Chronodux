@@ -1,3 +1,8 @@
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "chronodux"
 version = "0.1.0"
@@ -5,16 +10,26 @@ description = "A lightweight Python thread and code execution service manager."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
+
 authors = [
     { name = "Samriddha Maity", email = "sam.maity4411@gmail.com" },
     { name = "SamWorks Studios", email = "contact@samworks.cyberdeep.qzz.io" },
     { name = "CyberDeep Corporate", email = "contact@cyberdeep.qzz.io" }
 ]
-keywords = ["threading", "concurrency", "task-runner", "service-manager", "execution"]
+
+keywords = [
+    "threading",
+    "concurrency",
+    "task-runner",
+    "service-manager",
+    "execution"
+]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -23,8 +38,16 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Distributed Computing"
 ]
+
 dependencies = []
 
 [project.urls]
 Homepage = "https://samworks.cyberdeep.qzz.io"
 Repository = "https://github.com/cyberdeep-corp/Chronodux"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["chronodux*"]
