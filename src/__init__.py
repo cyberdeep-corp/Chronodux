@@ -300,11 +300,22 @@ class Chronodux:
                     self._tasks.pop(task_id, None)
                 raise
 
+        
         else:
             try:
                 with self._lock:
                     self._ensure_active()
+
+                    if self._executor is None:
+                        self._executor = (
+                            concurrent.futures.ThreadPoolExecutor(
+                                max_workers=self.max_workers,
+                                thread_name_prefix="Chronodux",
+                            )
+                        )
+
                     task.future = self._executor.submit(runner)
+
             except BaseException:
                 with self._lock:
                     self._tasks.pop(task_id, None)
