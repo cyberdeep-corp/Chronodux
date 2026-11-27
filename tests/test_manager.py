@@ -66,22 +66,22 @@ class TestChronodux(unittest.TestCase):
 
         self.assertEqual(self.manager.result(task.id), 30)
 
+
     def test_thread_keyword_arguments(self):
         def greet(name, greeting="Hello"):
             return f"{greeting}, {name}"
 
         task = self.manager.start(
             greet,
-            name="Sam",
-            greeting="Welcome",
+            "Sam",
+            greeting="Welcome"
         )
-
-        self.manager.join(task.id)
 
         self.assertEqual(
             self.manager.result(task.id),
-            "Welcome, Sam",
+            "Welcome, Sam"
         )
+
 
     def test_run_thread_alias(self):
         task = self.manager.run_thread(lambda: 100)
