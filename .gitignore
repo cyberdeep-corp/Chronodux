@@ -61,6 +61,3 @@ logs/
 # Build artifacts
 *.whl
 *.tar.gz
-
-# Offline testing
-offline_tests/

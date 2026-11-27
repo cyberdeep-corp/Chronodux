@@ -1,31 +1,36 @@
 
-name: Publish Chronodux to PyPI
+name: Chronodux Release
 
 on:
   release:
-    types: [published]
+    types:
+      - published
 
 permissions:
   contents: read
 
 jobs:
+  test:
+    name: Run Test Suite
+    uses: ./.github/workflows/tests.yml
+
   build:
-    name: Build distributions
+    name: Build Release
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
+        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install build tools
         run: |
+          python -m pip install --upgrade pip
           python -m pip install --upgrade build twine
 
       - name: Build distributions
@@ -35,11 +40,12 @@ jobs:
         run: python -m twine check --strict dist/*
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
-          name: chronodux-distributions
+          name: chronodux-release
           path: dist/
           if-no-files-found: error
+          retention-days: 7
 
   publish:
     name: Publish to PyPI
@@ -55,10 +61,12 @@ jobs:
 
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v4
         with:
-          name: chronodux-distributions
+          name: chronodux-release
           path: dist/
 
-      - name: Publish package
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
