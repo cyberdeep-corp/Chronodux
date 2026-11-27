@@ -10,7 +10,7 @@ Package: chronodux
 
 __version__ = "0.1.0"
 __author__ = "SamWorks Studios"
-__license__ = "MIT"
+__license__ = "UOSL-1.0"
 
 import threading
 import concurrent.futures
