@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     name: Run Test Suite
-    uses: ./.github/workflows/tests.yml
+    uses: .github/workflows/tests.yml
 
   build:
     name: Build Release
