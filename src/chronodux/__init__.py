@@ -4,11 +4,11 @@ Chronodux
 ---------
 Hybrid Python Threading and Concurrent Execution Manager.
 
-Version: 0.1.0
+Version: 0.1.1
 Package: chronodux
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "SamWorks Studios"
 __license__ = "UOSL-1.0"
 
