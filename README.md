@@ -24,7 +24,7 @@ Chronodux also provides task tracking, cooperative cancellation, service lifecyc
 
 ## Requirements
 
-- Python 3.9 or newer.
+- Python 3.10 or newer.
 
 ## Installation
 

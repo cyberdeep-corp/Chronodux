@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Chronodux documentation"><meta name="theme-color" content="#101827"><title>Chronodux Documentation</title><link rel="stylesheet" href="assets/style.css"></head>
+<body><header><a class="brand" href="#top"><b>C</b> Chronodux <small>DOCUMENTATION</small></a><nav><a href="https://pypi.org/project/chronodux/">PyPI ↗</a><a href="https://github.com/cyberdeep-corp/Chronodux">GitHub ↗</a><button id="menu">☰</button></nav></header>
+<aside id="sidebar"><strong>GET STARTED</strong><a href="#overview">Overview</a><a href="#install">Installation</a><a href="#quickstart">Quick start</a><strong>GUIDES</strong><a href="#backends">Execution backends</a><a href="#tasks">Task management</a><a href="#context">Cooperative cancellation</a><a href="#services">Services</a><a href="#utilities">Concurrency utilities</a><a href="#monitoring">Monitoring</a><a href="#lifecycle">Lifecycle</a><strong>REFERENCE</strong><a href="#exceptions">Exceptions</a><a href="#api">Public API</a><a href="#development">Development</a><a href="#license">License</a></aside>
+<main id="top"><p class="eyebrow">PYTHON SERVICE & TASK MANAGER</p><h1>Chronodux documentation</h1><p class="lead">A lightweight Python service manager for orchestrating threads, background tasks, and code execution lifecycles.</p><p><a class="button primary" href="#install">Get started →</a> <a class="button" href="https://pypi.org/project/chronodux/">View on PyPI ↗</a></p><div class="meta">Version 0.1.0 · Python ≥ 3.10 · Alpha · Standard-library runtime</div>
+<section id="overview"><h2>Overview</h2><p>Chronodux provides a unified interface for managing Python threads and concurrent execution through two backends:</p><div class="cards"><article><h3>Threading</h3><p>Direct execution using Python's <code>threading.Thread</code>.</p></article><article><h3>Concurrent</h3><p>Managed execution using <code>concurrent.futures.ThreadPoolExecutor</code>.</p></article><article><h3>Task lifecycle</h3><p>Track, join, cooperatively cancel, and retrieve task results.</p></article><article><h3>Services & health</h3><p>Manage reusable services and inspect execution metrics.</p></article></div><h3>Features</h3><ul><li>Dual execution backends and task management.</li><li>Task context for cooperative termination.</li><li>Result handling and execution exceptions.</li><li>Reusable service lifecycle management.</li><li>Concurrency utilities, execution metrics, and health monitoring.</li><li>Manager shutdown and context manager support.</li><li>Python standard library runtime with no external runtime dependencies.</li></ul></section>
+<section id="install"><h2>Installation</h2><p>Requires Python 3.10 or newer.</p><pre><code>python -m pip install chronodux</code><button>Copy</button></pre><pre><code>python -m pip show chronodux</code><button>Copy</button></pre></section>
+<section id="quickstart"><h2>Quick start</h2><pre><code>from chronodux import Chronodux
+
+def sample_task():
+    print("Running managed task...")
+
+manager = Chronodux()
+task = manager.start(sample_task)
+manager.join(task.id)
+print(manager.status(task.id))
+manager.shutdown()</code><button>Copy</button></pre></section>
+<section id="backends"><h2>Execution backends</h2><h3>Threading</h3><pre><code>from chronodux import Chronodux
+
+manager = Chronodux(backend="threading")
+
+def worker():
+    print("Executing through threading")
+
+task = manager.start(worker)
+manager.join(task.id)
+manager.shutdown()</code><button>Copy</button></pre><h3>Concurrent</h3><p>The concurrent backend uses <code>ThreadPoolExecutor</code>. <code>max_workers</code> controls the maximum worker-thread count.</p><pre><code>from chronodux import Chronodux
+
+manager = Chronodux(backend="concurrent", max_workers=4)
+
+def worker():
+    return "Concurrent execution completed"
+
+task = manager.start(worker)
+print(manager.result(task.id))
+manager.shutdown()</code><button>Copy</button></pre></section>
+<section id="tasks"><h2>Task management</h2><h3>Start a task</h3><pre><code>task = manager.start(target_function, "argument", name="MyTask")
+
+task = manager.start(
+    target_function,
+    backend="threading",
+    name="MyTask",
+    daemon=False
+)</code><button>Copy</button></pre><div class="tablewrap"><table><tr><th>Parameter</th><th>Description</th></tr><tr><td><code>target</code></td><td>Callable to execute</td></tr><tr><td><code>*args</code></td><td>Positional arguments</td></tr><tr><td><code>backend</code></td><td>Execution backend override</td></tr><tr><td><code>name</code></td><td>Task name</td></tr><tr><td><code>daemon</code></td><td>Daemon setting for threading tasks</td></tr><tr><td><code>pass_context</code></td><td>Inject a <code>TaskContext</code></td></tr><tr><td><code>**kwargs</code></td><td>Keyword arguments</td></tr></table></div><h3>Retrieve, list, and inspect</h3><pre><code>task = manager.get(task.id)
+print(task.id, task.name, task.status, task.backend)
+
+tasks = manager.list_tasks()
+for task in tasks:
+    print(task.name, task.status)
+
+running_tasks = manager.list_tasks(status="running")
+print(manager.status(task.id))
+print(manager.status())</code><button>Copy</button></pre><p>Statuses: <code>pending</code>, <code>running</code>, <code>completed</code>, <code>failed</code>, <code>cancelled</code>.</p><h3>Results and waiting</h3><pre><code>result = manager.result(task.id)
+result = manager.result(task.id, timeout=10)
+manager.join(task.id)
+manager.join()
+manager.join(timeout=10)</code><button>Copy</button></pre><p><code>result()</code> returns the task result and propagates execution exceptions.</p><h3>Stop, cancel, and remove</h3><pre><code>manager.stop(task.id)
+manager.cancel(task.id)  # alias for stop()
+manager.remove(task.id)  # remove a completed task
+manager.clear()          # clear completed tasks</code><button>Copy</button></pre><div class="callout"><b>Important:</b> Python threads cannot be forcibly terminated safely. Running tasks must cooperate with termination requests using <code>TaskContext</code>.</div></section>
+<section id="context"><h2>Task context & cooperative cancellation</h2><pre><code>from chronodux import Chronodux
+
+manager = Chronodux()
+
+def background_worker(context):
+    while not context.stop_requested:
+        print("Worker is running...")
+        if context.wait(1):
+            break
+    print("Worker stopped.")
+
+task = manager.start(background_worker, pass_context=True)
+manager.stop(task.id)
+manager.join(task.id)</code><button>Copy</button></pre><div class="tablewrap"><table><tr><th>Member</th><th>Description</th></tr><tr><td><code>id</code>, <code>name</code></td><td>Associated task identity</td></tr><tr><td><code>stop_requested</code></td><td>Checks whether termination was requested</td></tr><tr><td><code>stop()</code></td><td>Requests cooperative termination</td></tr><tr><td><code>wait(timeout)</code></td><td>Waits for a termination request</td></tr><tr><td><code>raise_if_stopped()</code></td><td>Raises <code>InterruptedError</code> if termination was requested</td></tr></table></div></section>
+<section id="services"><h2>Service management</h2><pre><code>def background_service():
+    print("Service started")
+
+manager.register_service("example-service", background_service)
+task = manager.start_service("example-service")
+task = manager.start_service("example-service", backend="concurrent")
+manager.stop_service("example-service")
+manager.restart_service("example-service")
+manager.unregister_service("example-service")
+manager.unregister_service("example-service", stop=True)
+services = manager.list_services()</code><button>Copy</button></pre><p>The returned dictionary contains service names, associated task IDs, and service execution statuses.</p></section>
+<section id="utilities"><h2>Concurrency utilities</h2><pre><code>task = manager.submit(background_function, "argument")
+task = manager.run_thread(background_function, "argument")
+done, not_done = manager.wait()
+done, not_done = manager.wait(timeout=5, return_when="ALL_COMPLETED")</code><button>Copy</button></pre><p><code>return_when</code> accepts <code>ALL_COMPLETED</code>, <code>FIRST_COMPLETED</code>, and <code>FIRST_EXCEPTION</code>.</p></section>
+<section id="monitoring"><h2>Monitoring & metrics</h2><pre><code>metrics = manager.metrics()
+print(metrics)
+
+health = manager.health()
+print(health)</code><button>Copy</button></pre><p>Metrics include task totals and counts by execution state. Health information includes manager name, package version, default backend, manager active state, and execution metrics.</p><p>Example metrics structure:</p><pre><code>{
+    "total": 5,
+    "pending": 0,
+    "running": 2,
+    "completed": 2,
+    "failed": 1,
+    "cancelled": 0
+}</code><button>Copy</button></pre></section>
+<section id="lifecycle"><h2>Manager lifecycle</h2><h3>Shutdown</h3><pre><code>manager.shutdown()
+manager.shutdown(wait=True, cancel_futures=False)</code><button>Copy</button></pre><p><code>wait</code> waits for managed execution to finish. <code>cancel_futures</code> attempts to cancel pending executor futures. Running tasks receive cooperative termination requests; running threads cannot be forcibly terminated.</p><h3>Context manager</h3><pre><code>from chronodux import Chronodux
+
+with Chronodux() as manager:
+    task = manager.start(lambda: print("Managed execution"))
+    manager.join(task.id)</code><button>Copy</button></pre><p>The manager automatically shuts down when the context exits.</p></section>
+<section id="exceptions"><h2>Exceptions</h2><div class="tablewrap"><table><tr><th>Exception</th><th>Description</th></tr><tr><td><code>ChronoduxError</code></td><td>Base exception</td></tr><tr><td><code>TaskNotFoundError</code></td><td>Requested task does not exist</td></tr><tr><td><code>ServiceNotFoundError</code></td><td>Requested service does not exist</td></tr><tr><td><code>ManagerShutdownError</code></td><td>Operation attempted after manager shutdown</td></tr><tr><td><code>InvalidBackendError</code></td><td>Unsupported backend selected</td></tr></table></div><pre><code>from chronodux import (
+    Chronodux, ChronoduxError, TaskNotFoundError,
+    ServiceNotFoundError, ManagerShutdownError, InvalidBackendError
+)</code><button>Copy</button></pre></section>
+<section id="api"><h2>Public API</h2><pre><code>from chronodux import (
+    __version__, Chronodux, Task, TaskContext,
+    ChronoduxError, TaskNotFoundError, ServiceNotFoundError,
+    ManagerShutdownError, InvalidBackendError
+)</code><button>Copy</button></pre><p>This reference reflects the public exports documented for Chronodux 0.1.0.</p></section>
+<section id="development"><h2>Development</h2><h3>Clone</h3><pre><code>git clone https://github.com/cyberdeep-corp/Chronodux.git
+cd Chronodux</code><button>Copy</button></pre><h3>Editable installation</h3><pre><code>python -m pip install -e .</code><button>Copy</button></pre><h3>Run tests</h3><pre><code>python -m unittest discover -s tests -v</code><button>Copy</button></pre><h3>Build and validate</h3><pre><code>python -m pip install --upgrade build twine
+python -m build
+python -m twine check --strict dist/*</code><button>Copy</button></pre></section>
+<section id="license"><h2>License & project</h2><p>Chronodux is distributed under the <b>Union Open Source License (UOSL-1.0)</b>. See the <a href="https://github.com/cyberdeep-corp/Chronodux/blob/main/LICENSE">LICENSE file</a> for the complete terms.</p><p>Published and maintained by <b>Union Foundation</b>, CyberDeep Union Foundation Groups, an organisational group under CyberDeep Corporate.</p><p>Author: Samriddha Maity · Development: SamWorks Studios · Organisation: CyberDeep Corporate</p><p><a href="https://union.cyberdeep.qzz.io">Union Foundation ↗</a> · <a href="https://samworks.cyberdeep.qzz.io">SamWorks Studios ↗</a></p></section>
+<footer><b>Chronodux</b><p>Documentation for 0.1.0 · Alpha</p><a href="https://pypi.org/project/chronodux/">PyPI</a> · <a href="https://github.com/cyberdeep-corp/Chronodux">GitHub</a></footer></main><script src="assets/docs.js"></script></body></html>
